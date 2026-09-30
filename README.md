@@ -121,8 +121,8 @@ docs/              Cost notes and an operational runbook
 ## Running it locally (no AWS account needed)
 
 ```bash
-git clone <this-repo>
-cd atlas-platform
+git clone https://github.com/gersimuca/atlas
+cd atlas
 make local-up      # builds and starts everything, LocalStack included
 make seed-data     # uploads sample contracts/invoices/tickets
 ```
@@ -141,7 +141,7 @@ path is real and exercised, it just returns a clearly-labeled mock answer
 instead of calling the actual model. See `local-dev/.env.example` to point
 it at real Bedrock instead.
 
-## Deploying to real AWS
+## Deploying to AWS
 
 ```bash
 cd infra/environments/dev
@@ -175,10 +175,7 @@ and the OpenSearch Serverless collection). **Read
 - Private subnets for all compute, VPC flow logs, KMS encryption on every
   data store, `NetworkPolicy` restricting which pods can talk to which.
 
-## What I'd add for a real production system
-
-Being upfront about what's simplified here, since a real interview will
-probably ask:
+## Q/A production system
 
 - Multi-region DR and a real backup/restore drill, not just multi-AZ
 - WAF in front of the ALB, and a private (non-public) EKS API endpoint

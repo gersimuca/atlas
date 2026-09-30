@@ -22,7 +22,7 @@ local-logs: ## Tail logs from every local service
 	cd local-dev && docker compose logs -f
 
 seed-data: ## Load sample documents into the local (or real) bronze bucket + metadata table
-	python3 scripts/seed_sample_data.py
+	python scripts/seed_sample_data.py
 
 ## --- Quality gates ---
 
