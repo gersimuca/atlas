@@ -1,0 +1,25 @@
+# Applied after the Karpenter controller (installed via Terraform's
+# helm_release in environments/prod) is running:
+#   kubectl apply -f k8s/karpenter/ec2nodeclass.yaml
+#   kubectl apply -f k8s/karpenter/nodepool.yaml
+#
+# Kept as plain manifests rather than Terraform resources deliberately —
+# these are workload/scheduling configuration that application and platform
+# teams iterate on often (instance types, capacity mix), not infrastructure
+# that should require a `terraform apply` to change.
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: atlas-prod-default
+spec:
+  amiFamily: AL2023
+  role: atlas-prod-karpenter-node # matches the aws_iam_role.karpenter_node name from the eks module
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: atlas-prod
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: atlas-prod
+  tags:
+    ManagedBy: karpenter
+    Environment: prod

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: atlas-platform
+description: Enterprise document intelligence & agentic AI platform — api-gateway-service, agent-orchestrator, and ingestion-worker
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - aws
+  - eks
+  - bedrock
+  - agentcore
+  - agentic-ai
+maintainers:
+  - name: "[Your Name]"

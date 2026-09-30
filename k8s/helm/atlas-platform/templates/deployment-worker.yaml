@@ -1,0 +1,45 @@
+{{- $svc := .Values.services.ingestionWorker }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "atlas.labels" (dict "service" $svc) | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "atlas.labels" (dict "service" $svc) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $svc.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: {{ $svc.name }}
+          image: {{ include "atlas.image" (dict "service" $svc "Root" $) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: atlas-config
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          # No HTTP server here — this is a long-polling SQS consumer, so
+          # liveness is a heartbeat file touched once per poll loop instead
+          # of an HTTP endpoint.
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "test $(($(date +%s) - $(date -r /tmp/worker-heartbeat +%s))) -lt 60"]
+            initialDelaySeconds: 20
+            periodSeconds: 30

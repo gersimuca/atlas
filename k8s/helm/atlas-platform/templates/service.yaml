@@ -1,0 +1,31 @@
+{{- $svc := .Values.services.apiGatewayService }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "atlas.labels" (dict "service" $svc) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $svc.name }}
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svc.port }}
+---
+{{- $svc := .Values.services.agentOrchestrator }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "atlas.labels" (dict "service" $svc) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $svc.name }}
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svc.port }}

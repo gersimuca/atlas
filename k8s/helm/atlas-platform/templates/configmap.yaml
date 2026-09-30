@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-config
+  namespace: {{ .Values.namespace }}
+data:
+  AWS_REGION: {{ .Values.config.awsRegion | quote }}
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  USE_MOCK_LLM: {{ .Values.config.useMockLlm | quote }}
+  TOOL_EXECUTION_MODE: {{ .Values.config.toolExecutionMode | quote }}
+  USE_AGENTCORE_MEMORY: {{ .Values.config.useAgentcoreMemory | quote }}
+  BEDROCK_MODEL_ID: {{ .Values.config.bedrockModelId | quote }}
+  BEDROCK_KNOWLEDGE_BASE_ID: {{ .Values.config.bedrockKnowledgeBaseId | quote }}
+  BEDROCK_GUARDRAIL_ID: {{ .Values.config.bedrockGuardrailId | quote }}
+  BEDROCK_GUARDRAIL_VERSION: {{ .Values.config.bedrockGuardrailVersion | quote }}
+  GLUE_GOLD_DATABASE: {{ .Values.config.glueGoldDatabase | quote }}
+  ATHENA_WORKGROUP: {{ .Values.config.athenaWorkgroup | quote }}
+  ATHENA_OUTPUT_LOCATION: {{ .Values.config.athenaOutputLocation | quote }}
+  BRONZE_BUCKET_NAME: {{ .Values.config.bronzeBucketName | quote }}
+  DOCUMENT_METADATA_TABLE_NAME: {{ .Values.config.documentMetadataTableName | quote }}
+  INGESTION_QUEUE_URL: {{ .Values.config.ingestionQueueUrl | quote }}
+  AGENTCORE_GATEWAY_URL: {{ .Values.config.agentcoreGatewayUrl | quote }}
+  AGENT_M2M_CREDENTIALS_SECRET_ARN: {{ .Values.config.agentM2mCredentialsSecretArn | quote }}
+  COGNITO_USER_POOL_ID: {{ .Values.config.cognitoUserPoolId | quote }}
+  COGNITO_APP_CLIENT_ID: {{ .Values.config.cognitoAppClientId | quote }}
+  AGENT_ORCHESTRATOR_URL: "http://{{ (index .Values.services "agentOrchestrator").name }}:{{ (index .Values.services "agentOrchestrator").port }}"

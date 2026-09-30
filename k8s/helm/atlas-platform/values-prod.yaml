@@ -1,0 +1,37 @@
+# Overlay for prod: `helm upgrade --install atlas . -f values.yaml -f values-prod.yaml`
+
+config:
+  environment: prod
+  logLevel: WARNING
+  useMockLlm: "false"
+  toolExecutionMode: gateway # route through the AgentCore Gateway for centralized tool governance
+  useAgentcoreMemory: "true"
+
+ingress:
+  host: "atlas.example.com" # replace with your real domain
+  certificateArn: "arn:aws:acm:us-east-1:CHANGE-ME:certificate/CHANGE-ME"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+
+services:
+  apiGatewayService:
+    replicaCount: 3
+    resources:
+      requests: { cpu: "500m", memory: "512Mi" }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    autoscaling:
+      minReplicas: 3
+      maxReplicas: 10
+  agentOrchestrator:
+    replicaCount: 3
+    resources:
+      requests: { cpu: "1000m", memory: "1Gi" }
+      limits: { cpu: "2000m", memory: "2Gi" }
+    autoscaling:
+      minReplicas: 3
+      maxReplicas: 12
+  ingestionWorker:
+    replicaCount: 2

@@ -1,0 +1,20 @@
+# Overlay for dev: `helm upgrade --install atlas . -f values.yaml -f values-dev.yaml`
+# Populate the image.registry and config.* placeholders from your
+# `terraform output` in infra/environments/dev before deploying.
+
+config:
+  environment: dev
+  useMockLlm: "true" # keep true until Bedrock model access + KB are set up for real
+  toolExecutionMode: direct
+
+services:
+  apiGatewayService:
+    replicaCount: 1
+    autoscaling:
+      minReplicas: 1
+      maxReplicas: 3
+  agentOrchestrator:
+    replicaCount: 1
+    autoscaling:
+      minReplicas: 1
+      maxReplicas: 3

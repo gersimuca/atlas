@@ -1,0 +1,34 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-orchestrator-allow-from-api-gateway-only
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.services.agentOrchestrator.name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.services.apiGatewayService.name }}
+      ports:
+        - port: {{ .Values.services.agentOrchestrator.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingestion-worker-deny-all-ingress
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.services.ingestionWorker.name }}
+  policyTypes:
+    - Ingress
+  # No ingress rules at all: this pod only ever makes outbound calls (SQS,
+  # DynamoDB, Glue, SageMaker) — it never needs to accept a connection.
+{{- end }}

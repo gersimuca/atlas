@@ -1,0 +1,83 @@
+namespace: atlas
+
+image:
+  registry: "" # set to your ECR registry, e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com
+  tag: "latest" # CI overrides this with the git SHA on every deploy — see .github/workflows/deploy.yml
+  pullPolicy: IfNotPresent
+
+services:
+  apiGatewayService:
+    name: api-gateway-service
+    repository: atlas/api-gateway-service
+    port: 8000
+    replicaCount: 2
+    serviceAccountRoleArn: "" # module.eks IRSA role ARN for this service, from terraform output irsa_role_arns
+    resources:
+      requests: { cpu: "250m", memory: "256Mi" }
+      limits: { cpu: "500m", memory: "512Mi" }
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+
+  agentOrchestrator:
+    name: agent-orchestrator
+    repository: atlas/agent-orchestrator
+    port: 8001
+    replicaCount: 2
+    serviceAccountRoleArn: ""
+    resources:
+      requests: { cpu: "500m", memory: "512Mi" }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+
+  ingestionWorker:
+    name: ingestion-worker
+    repository: atlas/ingestion-worker
+    replicaCount: 1
+    serviceAccountRoleArn: ""
+    resources:
+      requests: { cpu: "100m", memory: "128Mi" }
+      limits: { cpu: "250m", memory: "256Mi" }
+    autoscaling:
+      enabled: false # scales with queue depth in a real deployment (KEDA), not CPU — see values comment in hpa.yaml
+
+ingress:
+  enabled: true
+  className: alb
+  host: "" # leave blank to use the ALB's own DNS name; set to enable Route53 + ACM
+  certificateArn: "" # ACM cert ARN, required if host is set
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+
+config:
+  awsRegion: us-east-1
+  environment: dev
+  logLevel: INFO
+  useMockLlm: "true" # flip to "false" once Bedrock model access + Knowledge Base are provisioned
+  toolExecutionMode: direct # "direct" or "gateway" — see agent-orchestrator's ToolExecutor
+  useAgentcoreMemory: "false"
+  bedrockModelId: "us.anthropic.claude-sonnet-4-6"
+  bedrockKnowledgeBaseId: ""
+  bedrockGuardrailId: ""
+  bedrockGuardrailVersion: "DRAFT"
+  glueGoldDatabase: "atlas_dev_gold"
+  athenaWorkgroup: "atlas-dev-agent"
+  athenaOutputLocation: "s3://CHANGE-ME/agent/"
+  bronzeBucketName: "CHANGE-ME"
+  documentMetadataTableName: "atlas-dev-document-metadata"
+  ingestionQueueUrl: "CHANGE-ME"
+  agentcoreGatewayUrl: ""
+  agentM2mCredentialsSecretArn: ""
+  cognitoUserPoolId: ""
+  cognitoAppClientId: ""
+
+networkPolicy:
+  enabled: true
