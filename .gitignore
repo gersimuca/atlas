@@ -1,0 +1,63 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg
+dist/
+build/
+
+# --- Terraform ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+!infra/environments/*/terraform.tfvars
+crash.log
+crash.*.log
+.terraform.lock.hcl
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- Docker / local dev ---
+local-dev/.env
+local-dev/localstack-data/
+**/*.local.yml
+
+# --- ML artifacts ---
+ml/**/*.joblib
+ml/**/model.tar.gz
+ml/**/*.ipynb_checkpoints
+data/
+
+# --- Kubernetes / Helm ---
+k8s/helm/**/charts/
+k8s/helm/**/*.tgz
+kubeconfig*
+
+# --- Secrets (never commit these) ---
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+!local-dev/.env.example
+secrets/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Build output ---
+*.zip
+node_modules/
