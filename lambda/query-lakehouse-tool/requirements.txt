@@ -1,0 +1,3 @@
+# boto3 ships in the Lambda Python 3.12 runtime image already; pinned
+# here only so `pip install -r` works the same way in local tests/CI.
+boto3>=1.34,<2.0
