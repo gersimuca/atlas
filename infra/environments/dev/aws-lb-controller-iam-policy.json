@@ -1,0 +1,13 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PLACEHOLDER_REPLACE_BEFORE_APPLYING",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeVpcs"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
