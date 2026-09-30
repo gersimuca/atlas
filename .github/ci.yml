@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python-services:
+    strategy:
+      matrix:
+        service: [api-gateway-service, agent-orchestrator, ingestion-worker]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/${{ matrix.service }}/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: pip install ruff && ruff check .
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Security scan (bandit)
+        run: |
+          pip install bandit
+          bandit -r app -ll
+
+  lambda-tools:
+    strategy:
+      matrix:
+        function: [query-lakehouse-tool, get-document-metadata-tool]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lambda/${{ matrix.function }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -c "import ast; ast.parse(open('handler.py').read())"
+      - run: pip install bandit && bandit handler.py -ll
+
+  terraform-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive infra
+
+      - name: terraform validate (per module, no backend/credentials needed)
+        run: |
+          for dir in infra/modules/*/; do
+            echo "--- validating $dir ---"
+            (cd "$dir" && terraform init -backend=false -input=false && terraform validate)
+          done
+
+      - name: Static security scan (tfsec)
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: infra
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint k8s/helm/atlas-platform -f k8s/helm/atlas-platform/values-dev.yaml
+
+  docker-build-check:
+    strategy:
+      matrix:
+        service: [api-gateway-service, agent-orchestrator, ingestion-worker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image (no push — just confirms the Dockerfile is valid)
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/${{ matrix.service }}
+          push: false
+          tags: atlas/${{ matrix.service }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
