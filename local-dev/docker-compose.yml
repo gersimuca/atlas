@@ -1,0 +1,103 @@
+# Local-only stack. Nothing here runs on bare metal — every process is a
+# container, including the AWS emulation layer (LocalStack).
+#
+# What works fully locally: document upload -> S3 -> SQS -> ingestion
+# worker -> DynamoDB (LocalStack Community handles S3/DynamoDB/SQS well),
+# and the full chat flow in mock-LLM mode (no AWS dependency at all for
+# that path — see agent-orchestrator/app/agent/bedrock_client.py).
+#
+# What doesn't: query_lakehouse against a real Athena/Glue Data Catalog —
+# LocalStack Community's Glue/Athena support is partial. That tool will
+# error locally unless you're on LocalStack Pro; it's exercised for real
+# once you deploy to actual AWS. This is a deliberate, documented gap, not
+# an oversight.
+
+services:
+  localstack:
+    image: localstack/localstack:4.0
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,dynamodb,sqs,iam,sts,secretsmanager
+      DEBUG: 0
+      PERSISTENCE: 1
+    volumes:
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  localstack-init:
+    image: localstack/localstack:4.0
+    entrypoint: ["bash", "/init/init-aws.sh"]
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - ./localstack-init:/init:ro
+    depends_on:
+      localstack:
+        condition: service_healthy
+    restart: "no"
+
+  api-gateway-service:
+    build: ../apps/api-gateway-service
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: local
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AUTH_ENABLED: "false"
+      AGENT_ORCHESTRATOR_URL: http://agent-orchestrator:8001
+      BRONZE_BUCKET_NAME: atlas-local-bronze
+      DOCUMENT_METADATA_TABLE_NAME: atlas-local-document-metadata
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+      agent-orchestrator:
+        condition: service_started
+
+  agent-orchestrator:
+    build: ../apps/agent-orchestrator
+    ports:
+      - "8001:8001"
+    environment:
+      ENVIRONMENT: local
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      USE_MOCK_LLM: "true" # set false + supply real Bedrock creds/KB id to talk to the real model
+      TOOL_EXECUTION_MODE: direct
+      USE_AGENTCORE_MEMORY: "false" # no local emulator for AgentCore yet
+      GLUE_GOLD_DATABASE: atlas_local_gold
+      ATHENA_WORKGROUP: atlas-local-agent
+      ATHENA_OUTPUT_LOCATION: s3://atlas-local-athena-results/agent/
+      DOCUMENT_METADATA_TABLE_NAME: atlas-local-document-metadata
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+
+  ingestion-worker:
+    build: ../apps/ingestion-worker
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      INGESTION_QUEUE_URL: http://localstack:4566/000000000000/atlas-local-ingestion-events
+      DOCUMENT_METADATA_TABLE_NAME: atlas-local-document-metadata
+      LOG_LEVEL: INFO
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+
+volumes:
+  localstack-data:
