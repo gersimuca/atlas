@@ -1,13 +1,13 @@
 # Atlas — Data Lakehouse & Agentic AI Platform on AWS
 
-Atlas is a document-intelligence platform for a fictional company that
+Atlas is a document-intelligence platform for a company that
 receives a steady stream of business documents — contracts, invoices,
 support tickets, compliance reports — from every department. It ingests
 them into a governed data lakehouse, classifies them automatically, and
 gives employees a natural-language assistant that can answer questions
 grounded in the company's own data, with citations, instead of guessing.
 
-It's a personal project built to get real, hands-on depth with the stack
+It's a project built to get real, depth with the stack
 that actually runs cloud and AI infrastructure in production: **AWS,
 Terraform, Docker, Kubernetes**, and the plumbing behind **LLM-powered and
 agentic AI systems** (Bedrock, Bedrock AgentCore, SageMaker, Glue). Nothing
